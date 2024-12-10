@@ -1,0 +1,63 @@
+COMP 2406 2024F Assignment 1
+Name: Yuki Nakashima 
+Student ID: 101189690
+
+1. 
+simpleserver2 serves from a local folder in the current directory with the name "www".
+I verified my answer by inspecting the code, and confirming my hypothesis by making a "www" folder in my current directory and adding a sample index.html file to said folder.
+Afterwards, the program displayed my index.html file.
+
+2. 
+"Support" in this context means that the program successfully serves a pdf file as a downloadable file.
+In which it does, therefore does support pdf files. I verified this task by creating and adding a sample pdf file to the ./www directory and requesting it through the browser.
+
+3. 
+Changing the MIMEtype() function to an asynchronous function changed a few behaviours of MIMEtype().
+Firstly, it changed the function output. Seen in the console output as well, the contentType is now a Promise object with the corresponding file type in the Promise object.
+Secondly, the behaviour of the program when requesting for a pdf changed. Before the modification, requesting a pdf file would open a download window, whilst after, it would 
+attempt to open the pdf file to display it, however causing an error in loading on the browser page.
+I was able to check the behaviour above by changing, running, and comparing the behaviour before and after the modification.
+I was able to get it to work by --inspect-brk debugging and understanding that the keyword async meant that the function fulfills a promise (or an await call) and can be run while other 
+functions are running. Therefore I understood that the await keyword had to be added to the calling line of MIMEtype function. This was verified afterwards by running the program.
+
+4a. 
+I modified the program by adding a routing function before calling the fileData() function. By doing so, I could route the program to output the corresponding file on GET requests, 
+whilst outputting a "method not implemented" page on other requests. Seen in functions route(), routeOther(), and template_methodNotImplemented().
+
+4b. 
+Learning from the experiences in tutorial 3, I made a routing function. Issues that arose whilst implementing said function were minimal with a const variable declaration done to 
+path initially which was caught using the debugger. I then verified the output by adding a sample form html to the directory with a POST request button. After interacting with said
+page, the program served the proper method not implemented page.
+
+5a. 
+The catch block in the try catch block in function fileData() must be changed. Instead of building the page not found html page using the source function, contents would call another 
+Deno.readFile() function with the directory to a given html file containing the page not found file.
+
+5b. 
+I think my solution is correct because running the program and testing by requesting any page that is not existing in the directory outputs the corresponding page not found html page.
+
+5c. 
+As the implementation was inspired by formDemo.js from tutiral 3, no mistakes, errors, or other problems arose when implementing my solution above.
+
+6a. 
+The precise code to my solution is `var origpath = req.url.slice(req.url.lastIndexOf('/'));` at line 119.
+
+6b. 
+My inspiration for this solution was the file extension finder from MIMEtype() function. Therefore the resources I used to generate my solution was the --inspect-brk debugger to make 
+a breakpoint and see what the req.url looked in a string, and modify the slice() and lastIndexOf() function arguments to get the corresponding output that I needed.
+
+6c. 
+I tested my solution by going through both GET and POST requests to see if the appropriate page would be served. 
+This included going through with,
+    - no input request   (should output index.html)
+    - reload request     (should output index.html)
+    - hello.html request (hello.html does not exist, therefore should output pageNotFound.html)
+    - the formSample.html request (should output formSample.html)
+    - pressing the submit button on the formSample page to test a POST request (should output Method not implemented page)
+    - and the sample.pdf request (shoudl output pop up window for downloading sample.pdf)
+In which, every test passed and outputted the appropriate page on the browser.
+
+6d. 
+Although no problems, errors, or mistakes arose during my implementation of the solution above, I do understand that this is NOT a general solution does not account for different output 
+pages in different directories, therefore having its limitations. However, given the "./www" pathway addition in the Deno.readFile() in fileData(), I believe this solution suffices as 
+the original implementation of simpleserver2 assumes all accessible page files are in the www directory.

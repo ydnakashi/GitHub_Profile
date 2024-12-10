@@ -1,0 +1,407 @@
+COMP 2406 2024F Assignment 3
+Name: Yuki Nakashima
+Student ID: 101189690
+
+1. I would change submitdemo to accept specific submissions with other usernames by changing the first two lines of code in validator.js
+As good practice for programming, the string specifications for the file name and submission name are put into variables to be easily 
+interchanged with other strings. I verified by answer by changing lines,
+
+    const filePrefix = "comp2406-tutorial6";
+    const submissionName = "COMP 2406 2024F Tutorial 6"
+
+in validator.js to the following,
+
+    const filePrefix = "comp2406-assign3";
+    const submissionName = "COMP 2406 2024F Assignment 3"
+
+and creating and submitting a file name comp2406-assign3-soma.txt. As hoped, the submissions were accepted with no issues, whilst the 
+original sample text file used in tutorial 6 was rejected.
+
+2. A submission with an incorrect number of questions can be uploaded because of validator.js. Although the validator code updates the 
+tag communicating that there are the wrong number of questions, the for loop extracted below from validator.js parses the questions 
+and returns them as part of the q object to be later sent to the server as a JSON.
+
+    for (i = 4; i < lines.length; i++) {
+        if (typeof(lines[i]) === 'string') {
+            lines[i] = lines[i].replace('\r','');
+        }
+        
+        let m = lines[i].match(questionRE);
+        if (m) {
+            c++;
+            questionList.push(m[1]);
+            q[m[1]] = m[2];
+            lastQuestion = m[1];
+        } else {
+            if (lastQuestion !== null) {
+                if ((q[lastQuestion] === '') || (q[lastQuestion] === ' ')) {
+                    q[lastQuestion] = lines[i];
+                } else {
+                    q[lastQuestion] = q[lastQuestion] + "\n" + lines[i];
+                }
+            }
+        }
+    }
+
+For a quick and correct change, I can take inspiration from other file validation sections in the validator. In other parts of the program, 
+such as when the file name is not to standard, the tag is updated to indicate the wrong file name and the checkSubmission function returns 
+nothing, therefore not allowing an upload. Therefore, similarly, by adding the one return line to the question list validating section of 
+the code, I am able to prevent the upload of submissions with the wrong number of questions. Code shown below.
+
+    if (questionString !== expectedQuestionList) {
+        updateTag("status", "ERROR expected questions " +
+                  expectedQuestionList + " but got questions " +
+                  questionString);
+        return;     // added line
+    } else {
+        updateTag("status", "PASSED " +
+                  fn + ": " + q.name + " (" + q.studentID + ")");
+    }
+
+After the modification above, I submitted both a valid text file and a text file with the wrong number of questions and attempted to upload, 
+and was returned with an error saying not valid data to upload.
+
+3. To change submitdemo to only accept submissions with 6 questions rather than 5 questions, the const variable at the top of the program 
+is to be modified. From, 
+
+    const expectedQuestionList = "1,2,3,4,5";
+
+to the following,
+
+    const expectedQuestionList = "1,2,3,4,5,6";
+
+When making this change, the server program also must be modified correspondingly, as the database and database query are only programmed to 
+handle and store 5 questions rather than 6. I verified with a 5 question text file, as well as a 6 question text file, where I was promptly 
+rejected for the 5 question text file and accepted for the 6 question text file.
+
+4. The command line web request tool used to bypass the client-side validation is the following,
+
+    wget --post-file=./comp2406-assign3-soma.txt http://localhost:8000/uploadSubmission
+
+In which, the following error message was given.
+
+    --2024-11-18 23:53:03--  http://localhost:8000/uploadSubmission
+    Resolving localhost (localhost)... 127.0.0.1
+    Connecting to localhost (localhost)|127.0.0.1|:8000... connected.
+    HTTP request sent, awaiting response... 500 Internal Server Error
+    2024-11-18 23:53:03 ERROR 500: Internal Server Error.
+
+This occured because of the setup of submitdemo. Originally the uploaded files are parsed, sent, and then saved onto the databases as separate 
+columns instead of full text files. However since this web request tool sends a text file as the contents of the POST request, the sql database 
+cannot handle the data type, therefore giving an internal server error message.
+
+This tool was found by googling the wget manual, going into the GNU wget manual, and CTRL-F the page for POST tools, where --post-file was found.
+After some iterations, namely changing the http request from http://localhost:8000/ to http://localhost:8000/upload.html to finally 
+http://localhost:8000/uploadSubmission since the two prior commands only returned html files.
+
+5. To have text validation on the server side as well, I needed to send the contents as well as the file name all over through the POST request. 
+Therefore, I started out with creating a new object forServerVal to store all of the necessary data in checkSubmission() in validator.js. Then 
+proceeded to add the data in diffferent parts of the checkSubmission function in validator.js, as seen below.
+
+    // ... preceeding variable declarations
+    const fnPattern = filePrefix + "-[a-zA-Z0-9]+\.txt";
+    const fnRexp = new RegExp(fnPattern);
+    var forServerVal = {};  // added line
+
+    forServerVal.fn = fn;
+    // ... fn validation in validator.js ...
+
+    let encoding = lineEncoding(lines);
+    forServerVal.encoding = encoding;
+    // ... encoding validation in validator.js
+
+    forServerVal.content = lines;
+    // ... submissionName validation in validator.js
+
+    // ... question list validation in validator.js
+    // return q;
+    return forServerVal;
+
+At the end of the checkSubmission function, I commented out the `return q;` line and added the `return forServerVal;` to send all of the data to 
+the upload operation. I also commented out every return null statement in every validating if statement to make sure the program returns the object 
+regardless of the client-side validation deeming the upload invalid. 
+
+Moving onto the server-side validation, I started off with modifying the addSubmission(req) function. As seen below, I added an extra function to 
+validate the receive JSON object as well as an if statement to check if the validation passed or not on the server-side and return the proper response. 
+
+    async function addSubmission(req) {
+        var response;
+        const submission = await req.json();
+        const validation = checkSubmission(submission);
+
+        if (!validation) {
+            response = {
+                contentType: "text/plain",
+                status: status_BAD_REQUEST,
+                contents: "Bad Request"
+            };
+            return response;
+        }
+
+        const result = addSubmissionDB(db, table, validation);
+        // ... rest of addSubmission() unchanged ...
+    }
+
+Then for the server-side checkSubmission() function, I copied most of the client-side checkSubmission() logic over and made corresponding modifications 
+to account for the different contents in the received object, as seen below.
+
+    // ... as global variables at the top of program ...
+    const dbFile = "submissions.db";
+    const table = "tutorial7";
+    const filePrefix = "comp2406-assign3";
+    const submissionName = "COMP 2406 2024F Assignment 3";
+    const expectedQuestionList = "1,2,3,4,5";
+
+    // ... rest of code in between
+
+    function checkSubmission(obj) {
+        const fnPattern = filePrefix + "-[a-zA-Z0-9]+\.txt";
+        const fnRexp = new RegExp(fnPattern);
+
+        var lines = obj.content;
+        var questionList = [];
+        var questionString;
+        var lastQuestion = null;
+        var q = {};
+        
+        if (!fnRexp.test(obj.fn)) {
+            console.log("status", "ERROR " + obj.fn +
+                    " doesn't follow the pattern " + fnRexp);
+            return false;
+        }
+
+        if (obj.fn === filePrefix + "-template.txt") {
+            console.log("status", "ERROR " + obj.fn +
+                    " has the default name, please change template to your mycarletonone username");
+            return false;
+        }
+
+        if (obj.encoding !== "UNIX") {
+            console.log("status", "ERROR " + obj.fn +
+                    " is not a UNIX textfile, it is a "
+                    + obj.encoding + " file.");
+            return false;
+        }
+        
+        if (submissionName !== lines[0]) {
+            console.log("status", "ERROR " + obj.fn +
+                    " doesn't start with \"" + submissionName + "\"");
+            return false;
+        }
+        
+        try {
+            q.name = lines[1].match(/^Name:(.+)/m)[1].trim();
+            q.studentID = lines[2].match(/^Student ID:(.+)/m)[1].trim();
+        } catch (error) {
+            console.log("status", "ERROR " + obj.fn +
+                    " has bad Name or Student ID field or Section");
+            return false;
+        }
+        
+        var questionRE = /^([0-9a-g]+)\.(.*)/;
+        
+        for (var i = 4; i < lines.length; i++) {
+            if (typeof(lines[i]) === 'string') {
+                lines[i] = lines[i].replace('\r','');
+            }
+            
+            let m = lines[i].match(questionRE);
+            if (m) {
+                questionList.push(m[1]);
+                q[m[1]] = m[2];
+                lastQuestion = m[1];
+            } else {
+                if (lastQuestion !== null) {
+                    if ((q[lastQuestion] === '') || (q[lastQuestion] === ' ')) {
+                        q[lastQuestion] = lines[i];
+                    } else {
+                        q[lastQuestion] = q[lastQuestion] + "\n" + lines[i];
+                    }
+                }
+            }
+        }
+
+        console.log(JSON.stringify(q, null, '   '));
+
+        questionString = questionList.toString();
+        if (questionString !== expectedQuestionList) {
+            console.log("status", "ERROR expected questions " +
+                    expectedQuestionList + " but got questions " +
+                    questionString);
+            return false;
+        } else {
+            console.log("status", "PASSED " +
+                    obj.fn + ": " + q.name + " (" + q.studentID + ")");
+        }
+        return q;
+    }
+
+To explain the modifications above, I made sure to add the filePrefix, submissionName, and expectedQuestionList global variables at the top so that the 
+validations in the function transfer directly as much as possible. Then changed the fn variables to obj.fn since obj is the received object containing 
+the file name. As well as changed the updateTag functions to console.log functions since there is no tags to update but the error statuses are useful for 
+debugging later.
+
+For problems that arose during the implementation of this solution, my initial design actually started out as forServerVal being similar to the originally 
+returned object q but with additional data. As in the questions already parsed and stored, name, student ID, section, plus the file name and encoding. 
+However, I quickly realized that defeats the purpose of the server-side validation since if the file contents is parse-able on the client-side to begin 
+with, they will be on the server-siide as well. Thus, I made sure to include all of the lines of the file in the sending object. Furthermore, I had a minor 
+mistake to fix later in the modified addSubmission function. The mistake being the argument passed to addSubmissionDB was initially `submission`, the raw 
+unvalidated object received from the client, instead of the parsed validated object of `validation`. This caused an incorrect data insertion in the database, 
+which was only caught once tested. Since the incorrect object did not have attributes befitting the requirements for the database query, null were all passed 
+as entries, causing a null entry with a unique file ID in the database. 
+
+6. To implement a design change where submitdemo only accepts one submission per student ID, I understood I had two options to approach this solution. 
+The first option was to create an array or list in submitdemo.js that record student IDs to check for duplicate submissions. The other approach was to do the 
+same thing but rely on the database to recognize duplicate submissions. I decided to go the latter in the name of persistent data.
+
+To begin this implementation, I started by modifying the database table schema query. As seen below, I added the UNIQUE keyword to the studentID column. 
+This way the database does not accept duplicate studentID data insertion queries. 
+
+    db.execute(`
+        CREATE TABLE IF NOT EXISTS ${table} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            studentID INTEGER UNIQUE,
+            section TEXT,
+            name TEXT,
+            q1 TEXT,
+            q2 TEXT,
+            q3 TEXT,
+            q4 TEXT,
+            q5 TEXT
+        )
+    `);
+
+Next was modifying the addSubmission function in submitdemo.js. I initially assumed incorrectly in that the addSubmissionDB function would return something other 
+than an empty array for invalid insertions. However upon testing with console.log to print out the result, I was rightfully shown an error, with the contents 
+"SqliteError: UNIQUE constraint failed". Thus, taking inspiration from checkSubmission(), I used a try catch block. Executing the database query, and catching 
+the error to send an error response to the client side program. Modifications seen below.
+
+    async function addSubmission(req) {
+        var response, result;
+        // ... rest unchanged from code shown in questions above ...
+
+        try {
+            result = addSubmissionDB(db, table, validation);        
+        } catch (error) {
+            response = {
+                contentType: "text/plain",
+                status: status_CONFLICT,
+                contents: "Student ID has already submitted"
+            };
+            return response;
+        }
+
+        // ... rest of function code ...
+    }
+    
+Then, to update the client-side browser of the error, I added an if statement in the block that manages the responses, as seen below.
+
+    function doUploadSubmission(fn, q) {
+        // ... code unchanged ...
+            fetch(request).then((response) => {
+                if (response.status === 200) {
+                    updateTag("status", "UPLOAD COMPLETE of " + fn);
+                } else if (response.status == 409) {  // added block
+                    updateTag("status", "UPLOAD ERROR Upload forbidden, student has already submitted.");             
+                } else {
+                    updateTag("status", "UPLOAD ERROR of " + fn +
+                            ", failed with status " +
+                            response.status);
+                }
+            });
+        // ... rest of function ...
+    }
+
+Upon testing with duplicate and non duplicate text files, the responses and errors were shown correspondingly. 
+Note, I do understand this is not ideal as an implementation since it does not differentiate the different SqliteError's, however I understand from light 
+research that there libraries that can aid in differentiating such errors.
+
+7. To approach this design, I wanted to utilize the database and Sqlite as much as possible as I am aware of the many tools offered in the language, this 
+type of query being no exception. Taking inspiration from the query used to count the number of submissions total done in submitdemo during the tutorial, 
+I googled if COUNT had some type of filtering function. This led to sqlite.org/lang_aggfunc.html where it showed the different built-in functions including 
+COUNT, but more importantly a filter-clause, where it showed the syntax and order of operations of the functions. That is where the testing different 
+queries through sqlite began. Without any JavaScript implementations, I interacted directly with submissions.db through sqlite, testing queries 
+to get the the count of empty answers for a single question as a start, such as the one below.
+
+    SELECT COUNT(*) FILTER(WHERE q1 = '') FROM assignment3;
+
+I had loaded the databases with numerous different valid text files with varying empty answers using submitdemo. In which the query above showed a result of 2.
+
+This then moved to executing multiple COUNT functions with labelled columns. Since again I was aware of what I wanted but was unaware of the tool name, I 
+googled "sqlite specifying column names for result". Then sure enough, after reviewing the results, the fourth result, namely, 
+https://www.prisma.io/dataguide/sqlite/basic-select, had a section explaining the uses of the AS keyword. This led to the query below,
+
+    SELECT 
+        COUNT(*) FILTER (WHERE q1 = '') AS empty_q1,
+        COUNT(*) FILTER (WHERE q2 = '') AS empty_q2,
+        COUNT(*) FILTER (WHERE q3 = '') AS empty_q3,
+        COUNT(*) FILTER (WHERE q4 = '') AS empty_q4,
+        COUNT(*) FILTER (WHERE q5 = '') AS empty_q5
+    FROM assignment3;
+
+In which the result was 2|2|3|3|3.
+Lastly, I added a single text file with all whitespace answers, where I realized whitespaces were not counted. Since the question specified any number of 
+whitespaces, I thought of deleting all spaces to make them '' before counting. This was where I was reminded of the trim function in JavaScript from using 
+strings and regualr expressions at the beginning of the term in this course. I googled if the trim function was a thing in sqlite, and sure enough it was. 
+Using the resources from https://www.sqlitetutorial.net/sqlite-functions/sqlite-trim/, I was finalized with the query below.
+
+    SELECT 
+        COUNT(*) FILTER (WHERE TRIM(q1) = '') AS empty_q1,
+        COUNT(*) FILTER (WHERE TRIM(q2) = '') AS empty_q2,
+        COUNT(*) FILTER (WHERE TRIM(q3) = '') AS empty_q3,
+        COUNT(*) FILTER (WHERE TRIM(q4) = '') AS empty_q4,
+        COUNT(*) FILTER (WHERE TRIM(q5) = '') AS empty_q5
+    FROM assignment3;
+
+In which the result was 3|3|4|4|4.
+
+Getting on to the actual implementation in submitdemo, I started by modifying analyzeSubmissionsDB(). As seen below, I added another attribute to the 
+analysis object. 
+
+    function analyzeSubmissionsDB(db, table) {
+        var analysis = {};
+
+        analysis.count = db.query("SELECT COUNT(*) FROM " + table);
+        analysis.studentIDList =
+            db.query("SELECT DISTINCT studentID FROM " + table);
+        analysis.emptyAnswers = db.query(`
+            SELECT 
+                COUNT(*) FILTER (WHERE TRIM(q1) = '') AS empty_q1,
+                COUNT(*) FILTER (WHERE TRIM(q2) = '') AS empty_q2,
+                COUNT(*) FILTER (WHERE TRIM(q3) = '') AS empty_q3,
+                COUNT(*) FILTER (WHERE TRIM(q4) = '') AS empty_q4,
+                COUNT(*) FILTER (WHERE TRIM(q5) = '') AS empty_q5
+            FROM ${table};
+        `)
+        
+        return analysis;
+    }
+
+Moving on to the html implementation to display them onto the client-side, I had added lines in showAnalysis() to display the number of empty answers 
+much like the number of records done already in tutorial 7. As seen below.
+
+    async function showAnalysis() {
+        var analysis = analyzeSubmissionsDB(db, table);
+        var studentIDList =
+            '<li>' + analysis.studentIDList.join('</li> <li>') + '</li>';
+        
+        var analysisBody = `  <body>
+    <body>
+        <h1>Submissions analysis</h1>
+        <p># Records: ${analysis.count}</p>
+        <p># Empty Answers for Q1: ${analysis.emptyAnswers[0][0]}</p>
+        <p># Empty Answers for Q2: ${analysis.emptyAnswers[0][1]}</p>
+        <p># Empty Answers for Q3: ${analysis.emptyAnswers[0][2]}</p>
+        <p># Empty Answers for Q4: ${analysis.emptyAnswers[0][3]}</p>
+        <p># Empty Answers for Q5: ${analysis.emptyAnswers[0][4]}</p>
+
+        <p>Student IDs:
+        <ol>
+        ${studentIDList}
+        </ol>
+        </p>
+        // ... rest of code unchanged ...
+    }
+
+After running submitdemo with the preloaded test text files with varying empty and whitespace answers, I confirmed the count of showing 3, 3, 4, 4, and 4 
+on the client-side as well.

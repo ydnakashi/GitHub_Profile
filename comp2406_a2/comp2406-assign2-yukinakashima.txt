@@ -1,0 +1,165 @@
+COMP 2406 2024F Assignment 2
+Name: Yuki Nakashima
+Student ID: 101189690
+
+1. 
+The db.execute() in lines 24-33 is a sqlite command to create the people table if it does not exist.
+These lines are not necessary assuming a database with the included people table exists in the directory,
+in which it does in this assignment. I checked this by commenting out all of db.execute() and running the
+program again, going through all of the queries, and ensuring all functionalities remained.
+
+2. 
+There is a pattern to the page titles, being "COMP 2406 DB Demo 2: " and the corresponding page subtitle.
+However, this pattern is determined centrally and not centrally. It is central exclusively for the html 
+pages made by the JavaScript program including the List page and Analysis page. I checked this by 
+modifying the template_header(titel) function and seeing the changes in the corresponding page titles. 
+However, for any page that uses an external HTML file source such as the Add page and the index page, the
+page title pattern are not centrally determined and are determined by their separate HTML file. This was 
+checked by seeing the changes to the template_header function not take effect on these pages.
+
+3. 
+/add and /add.html are treated differently in that /add returns a page not found page, and /add.html 
+returns the corresponding add records page. They are treated differently because although they go through 
+the same routeGet function and return null, when calling the fileData function with the corresponding url 
+suffixes, /add emits an execption because there is no file in the static directory called explicitly add, 
+displaying the page not found page instead. Where as /add.html reads the add.html file present in the 
+static directory, working as expected. This can be seen and replicated with /index and /index.html as well.
+I checked this by running the program with the --inspect-brk command, establishing breakpoints in the 
+route, routeGet, and fileData functions and displaying the values of req.method, req.url, and path 
+variables on right hand side. Watching the program go through its code and comparing the different 
+states and behaviours in the variables values as the different requests were passed.
+
+4. 
+The behaviour of dbdemo2 changes when line 338 is taken out by not terminating/aborting the program when 
+^C is pressed. I realized this by commenting out the line and running the program, trying to finish the 
+program but not being able to and having to delete the terminal and start a new one to return to the 
+directory. This happens because the ac variable stores an AbortController object, then is connected to 
+the running web operation through ac.signal in server. Then through the Deno.addSignalListener, the 
+default behaviour of terminating the program when receiving the ^C or SIGINT signal is overwritten by 
+the signal listener, printing a message to the console and aborting the running web operation through 
+ac.abort() before terminating the program. I arrived to this explanation through the behaviour of the 
+program and the behaviours and states of the AbortController object on the MDN web docs DOM documentation.
+
+5. 
+There is a maximum number of records that will be shown by /list, which is 50. This is seen by the sql 
+query in the getAllRecordsDB() function where it says LIMIT 50. I verified this by making a copy of the 
+people.db, peopleCpy.db to ensure not to alter anything significant in the original database. Ran a sql 
+script file with the commands below,
+
+INSERT INTO people
+  WITH RECURSIVE
+    cte(id, name, city, country, birthday, email) AS (
+        VALUES(6 , random(), random(), random(), random(), random()) UNION ALL 
+        SELECT id+1,random(),random(), random(), random(), random() FROM cte WHERE ID<100
+    )
+SELECT * FROM cte;
+
+to generate and add 100 random rows. Once this was established, I changed the dbFile constant in dbdemo2.js,
+ran the program, and added a line in the getAllRecordsDB function printing the length of state in the 
+console, which printed 50. Furthermore, I clicked on the list record link, copy pasted the results into a 
+text file to count the rows, where it was indeed exactly 50 rows. 
+
+6a. 
+Can alphabetize the list of cities shown by /analyze by adding the below line of code in the showAnalysis 
+function, after the `var analysis = analyzeRecordsDB(db, table);` line
+
+        analysis.cityList.sort();
+
+I developed this solution by analyzing the program and realizing that the result of the sql query can be 
+sorted as an array. I tested both adding the above line in te showAnalysis function and analyzeRecordsDB 
+function, in which the result was both correct outputting the analysis in alphabetical order. Howeve, I 
+selected to put it in the showAnalysis function as to keep the analyzeRecordsDB function strictly sql 
+queries functionality and sorting the cities is more befitting the data formatting function of showAnalysis.
+There was no errors that arose implementing this solution.
+
+6b. 
+Can alphabetize the list of cities shown by /analyze by appending `+ "ORDER BY city ASC"` to the argument 
+of line 65 in analyzeRecordsDB function.
+
+    analysis.cityList = db.query("SELECT DISTINCT CITY FROM " + table + " ORDER BY city ASC");
+
+I developed this solution in inspiration from the getAllRecordsDB function, as the names were also 
+alphabetized. Therefore, I appended the same sql query into the analyzeRecordsDB function and tested the 
+results, and yielded the correct output. There was one small error that arose as I initially presumed I 
+did not have to specify which column to ORDER BY ASC since it was specified in the DISTINCT CITY. However, 
+I was incorrect and corrected the query by adding city in the ORDER BY city ASC.
+
+7a.
+I added a list of unique countries by adding a new query in the analyzeRecordsDB function as seen below.
+
+    analysis.countryList = db.query("SELECT DISTINCT COUNTRY FROM " + table + " ORDER BY country ASC");
+
+And adding a new list in the analysisBody variable after the city list in the showAnalysis function as 
+seen below. 
+
+    <p>Countries:
+      <ol>
+       ${countryList}
+      </ol>
+    </p>
+
+I developed this solution by seeing the implementation for the list of unique cities. I copied and altered 
+the query arguments to get countries instead of the cities, as well as the analysis.cityList variable to 
+analysis.countryList to not alter the cityList. I had no problems developing this implementation.    
+
+7b.
+Similarly to unique countries, I took note of the implementation for the count of records initially 
+provided. Adding the first two lines below in the analyzeRecordsDB function and the latter two lines in 
+anaylsisBody variable in the showAnalysis function after the count of records. 
+
+    analysis.countCities = db.query("SELECT COUNT(DISTINCT CITY) FROM " + table);
+    analysis.countCountries = db.query("SELECT COUNT(DISTINCT COUNTRY) FROM " + table);
+
+    <p># Unique Cities: ${analysis.countCities}</p>
+    <p># Unique Countries: ${analysis.countCountries}</p>
+
+I copied and altered the query arguments and added more variables to the compound variable analysis. Then 
+added HTML lines to the analysisBody similar to # Records line to display the appended counts. I also had 
+no problems implementing this solution.
+
+8. 
+One way to ensure that any birthday is a valid date is to change the HTML form input type for birthday to 
+"date". That way the user cannot input an invalid date. This solution was from researching the different 
+types available in the input object for HTML in the MDN web documentation.
+
+Another way to validate the birthday input whilst keeping it a text input object, is to make another 
+javascript script file to validate the birthday input, and connecting the script in the add HTML file to make 
+a client side validation. Adding a line,
+
+    <script src="script.js" defer></script>
+
+after the link line in the add HTML file. The defer keyword makes sure to execute the JavaScript after the 
+HTML file is finished and parsed at the end. Then to make a script.js file with the validation code, as 
+seen below.
+
+document.getElementById('recordForm').addEventListener('submit', (event) => {
+    const textInput = document.getElementById('birthday').value;
+    if (!validDate(textInput)) {
+        document.getElementById("errorMessage").style.display = 'block';
+        event.preventDefault();
+    } else {
+        document.getElementById("errorMessage").style.display = 'none';
+    }
+});
+    
+
+function validDate(date) {
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var components = date.split(" ");
+    if (components.length == 3 && months.includes(components[0])) {
+        var dateObjIn = "" + (months.indexOf(components[0])+1) + "/" + components[1].replace(/,/, '/') + components[2];
+        console.log(dateObjIn);
+        return !isNaN(new Date(dateObjIn));
+    }
+    return false;
+}
+
+The validDate function was developed from prior coding experience and researching JavaScript string manipulation 
+syntax for functions such as split(), and array functions such as includes(). The isNaN() function for Date object 
+was found through a google search and a stackoverflow article with a similar problem to solve. For the 
+document.getElementById()..., it was developed with a MDN web docs search and read in the Client side 
+Validation article, Validating forms using JavaScript section, with the HTMLInputElement article, where 
+addEventListener() was given. This was linked the addEventListener() article where I saw an undeclared variable
+document consistently referenced in examples, leading me to google why that is. Then realizing it is a given variable 
+when calling a JavaScript file from an HTML file, I found the various methods, including getElementById() function 
+to implement my final script file above.

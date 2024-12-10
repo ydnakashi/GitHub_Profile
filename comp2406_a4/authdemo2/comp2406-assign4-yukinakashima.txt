@@ -1,0 +1,345 @@
+COMP 2406 2024F Assignment 4
+Name: Yuki Nakashima
+Student ID: 101189690
+
+1. 
+The number of submission questions is hardcoded in the validator-core.js file in authdemo2, shown in line below. 
+
+    export const expectedQuestionList = "1,2,3,4,5,6,7";
+
+I verified this by at first submitting a valid file with the 7 questions, then change the expectedQuestionList 
+variable in validator-core.js and submitting the same file. I was returned with an error indicating the wrong number 
+of questions. This is different compared to previous versions of this application because the core validation 
+functions and constants are centralized in validator-core.js and then exported into both client-side and server-side 
+JavaScript files as submission validation is done on both sides. I got to this inital estimate of where the number of 
+submission questions is hardcoded by going through the source files and understanding the structure of the program. 
+Then getting my initial estimate above with the line of expectedQuestionList in validator-core.js, I conducted the 
+verification described above and confirmed my estimate.
+
+2.
+The format of the submission data uploaded to the server is in JSON string. This estimate and answer was retreived by 
+the lines of code shown below in doUploadSubmission() in validator.js.
+
+    const request = new Request("/uploadSubmission", {
+        method: "POST",
+        body: JSON.stringify({filename, filecontents}),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+Both the 'Content-Type' in the headers and the JSON.stringify() function converting the file name and contents 
+indicate the submission data being uploaded to the server through the form of a JSON string. 
+I verified this estimate by changing the body of the request in validator.js from the content above to the one shown 
+below.
+
+    const request = new Request("/uploadSubmission", {
+        method: "POST",
+        // body: JSON.stringify({filename, filecontents}),
+        body: {filename, filecontents},
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+By changing this and attempting to upload a valid file, I get an upload error with a failed status of 400 on the 
+client-side and an error on the server-side with the lines below.
+
+    SyntaxError: "[object Object]" is not valid JSON
+    at parse (<anonymous>)
+    at packageData (ext:deno_fetch/22_body.js:408:14)
+    at consumeBody (ext:deno_fetch/22_body.js:261:12)
+    at eventLoopTick (ext:core/01_core.js:175:7)
+    at async addSubmission (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:164:24)
+    at async routePost (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:287:16)
+    at async route (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:303:16)
+    at async handler (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:335:14)
+    at async mapped (ext:deno_http/00_serve.ts:384:18)
+
+The key point being the first line, indicating that the req.json() in addSubmission in authdemo2.js could not parse 
+the body because it was not a valid JSON, indicating that the submission data was originally being uploaded as a 
+JSON string, parse-able by json().
+
+3.
+When a user uploads more than one submission, the previous submission and its unique ID in the database are replaced 
+with a new submission and ID. Therefore, essentially deleting the previous submission. The new code responsible for 
+this behaviour is in addSubmission in authdb.js in lines shown below.
+
+    return db.query(`INSERT OR REPLACE INTO ${submissionTable} ` +
+                    "(studentID, " + queryQFields + ")" +
+                    "VALUES " + queryBlanks(numQuestions + 1), 
+                    [r.studentID].concat(answers));
+
+Specifically in the database query, the keywords INSERT OR REPLACE are used. This indicates a replacement of a row 
+in the database if another submission equivalent to r.studentID is found in the same table. 
+
+I verified this answer by removing the `OR REPLACE` keywords in the query above and attempting to upload the same 
+file with the valid student ID. I get a error status 500 on the client-side and a Sqlite error on the server-side 
+shown below.
+
+    SqliteError: UNIQUE constraint failed: assign4.studentID
+        at PreparedQuery.all (https://deno.land/x/sqlite@v3.9.1/src/query.ts:482:13)
+        at DB.query (https://deno.land/x/sqlite@v3.9.1/src/db.ts:260:26)
+        at Module.addSubmission (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdb.js:63:15)
+        at addSubmission (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:185:25)
+        at eventLoopTick (ext:core/01_core.js:175:7)
+        at async routePost (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:287:16)
+        at async route (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:303:16)
+        at async handler (file:///home/student/Documents/COMP2406A-F24/comp2406_a4/authdemo2/authdemo2.js:335:14)
+        at async mapped (ext:deno_http/00_serve.ts:384:18) {
+    code: 19,
+    name: "SqliteError"
+    }
+
+The error indicates that whilst the modified query without the OR REPLACE tries to insert a new row with the same 
+studentID, the table schema is compromised as the studentIDs do not retain its uniqueness, blocking the upload, 
+and throwing an error. 
+
+4.
+authdemo2 does not allow users to upload invalid submissions. Furthermore, such invalid submission will not be 
+stored in the server's database. The reason for this being that the checkSubmission() function in validator-core.js 
+is used in the server-side in authdemo2.js before the database insertion call function, as shown below.
+
+    const q = checkSubmission(submission.filename, submission.filecontents);
+
+    if (!q) {
+        return {
+            contentType: "text/plain",
+            status: status_BAD_REQUEST,
+            contents: "Bad Request: Invalid parsed submission upload",
+        };
+    }
+        
+    let result = db.addSubmission(q);
+
+Due to the design of checkSubmission(), the function returns null if at any point the submission is invalid, where 
+then the if statement detects that and returns a Bad Request response instead of letting the database insertion 
+function to be called. 
+
+I verified this by commenting out every `return;` in checkSubmission() in validator-core.js so that even if the 
+submission is invalid, the file is parsed and sent to the addSubmission function in authdemo2.js. After selecting a file, 
+getting an error on the tag saying wrong number of questions, and pressing upload, I was able to check the 
+submission in the database later by logging in as an admin. This proved that the return value of checkSubmission() 
+stopping invalid submissions to be uploaded to the server.
+
+5.
+To change the analysis page of authdemo2 to report the number of empty answers for each question, I started with 
+analyzing the showAnalysis() function in authdemo2.js. Following the logic, I went to analyzeSubmission() in authdb.js 
+for further analysis. Finding out that a function to calculate the number of blank answers was provided, I added a 
+console.log(counts) right before the return statement in calcBlankQuestionStats() in authdb.js and ran the program to 
+verify its out data and output to use later. I confirmed the output of 
+
+    [
+    0, 1, 1, 0,
+    1, 1, 1
+    ]
+
+in the console as expected of the sample files I had already addded. Once confirmed, I removed the console.log line 
+and went back to showAnalysis to display the data contained the variable analysis already. As shown below, I made 
+an empty string variable and added the number of blank answers stats with the corresponding prefixes using a for loop. 
+Once completed, I added the blankQsList variable in the analysisBody variable to reurn and display as part of the 
+dynamic HTML page.
+
+    async function showAnalysis() {
+        var analysis = db.analyzeSubmissions();
+        var studentIDList =
+            '<li>' + analysis.studentIDList.join('</li> <li>') + '</li>';
+        
+        // added
+        var blankQsList = "";
+        for (let i = 0; i < analysis.blankQuestions.length;  i++) {
+            blankQsList += `<p># Empty Answers for Q${i+1}: ${analysis.blankQuestions[i]}</p>`;
+        }
+        
+        var analysisBody = `  <body>
+        <body>
+        <h1>Submissions analysis</h1>
+        <p># Records: ${analysis.count}</p>
+        ${blankQsList} // added
+        <p>Student IDs:
+            <ol>
+                ${studentIDList}
+            </ol>
+        </p>
+
+        <form method="get" action="/admin/index.html">
+            <button type="submit">Home</button>
+        </form>
+      </body>
+    </html>`
+
+    // rest of function unchanged
+    }
+
+I verified the code above by running the program and displaying the corresponding numbers given before in the console.
+Furthermore, adding new student accounts and sample submissions to verify the increases in counts as well. I believe 
+the above implementations is one of which with the minimal code as I use a for loop to prevent code repetition.
+
+6.
+You cannot easily tell if two users chose the same password in authdemo2 looking at the accounts table. I verified 
+this by going through the terminal and accessing the accounts table through sqlite. Once navigating to the authdemo2 
+directory, I entered `sqlite3 submissions.db` then `.mode columns` and `select * from accounts;` to access the accounts 
+table in the database. Once executed, I was met with the output below.
+
+username  password                                                      access   studentID  name         
+--------  ------------------------------------------------------------  -------  ---------  -------------
+admin1    $argon2id$v=19$m=19456,t=2,p=1$tMnYoHH/CitU4g$iKPM0tyjAiVPBp  admin    1000       admin1 name  
+          fhPXbJjibebvDIGFmwwq1YRoTnNX8                                                                  
+
+student1  $argon2id$v=19$m=19456,t=2,p=1$U4bIQwmDK5vg$pXI7BLrkNMUOrbDr  student  2000       student1 name
+          EVMK5hqJrwiVcUjZszeeaucfu8s                                                                    
+
+student2  $argon2id$v=19$m=19456,t=2,p=1$SlPNOrEPh413Kvl/pIIZ$AH8zfgFZ  student  2001       student2 name
+          bN8nopfvsb1T69cNfOzIqL7uKiBPDXCIXOE                                                            
+
+student3  $argon2id$v=19$m=19456,t=2,p=1$6808d2jos3illA$WfJ/KPGKeNfuRF  student  2002       student3 name
+          wmcSkCEvYiJBFy7BbRv6Lehq3wt20  
+
+The output above demostrates the hashed nature of the passwords, done by `await hash(body.get("password"));` in 
+createAcct() in authdemo2.js. The hashing of the passwords prevents a viewer to know if two accounts have the same 
+password. Furthermore, I added a testadmin1 account with the same password as admin1, and teststudent3 account with 
+the same password as student3, since in theory hashing functions should be deterministic, facilitating the 
+realization of duplicate passwords between accounts. However I was met with the output below, demonstrating the 
+effectiveness of hashing functions in encrypting even duplicate passwords, which I could not figure 
+out why.
+
+username      password                                                      access   studentID  name             
+------------  ------------------------------------------------------------  -------  ---------  -----------------
+admin1        $argon2id$v=19$m=19456,t=2,p=1$tMnYoHH/CitU4g$iKPM0tyjAiVPBp  admin    1000       admin1 name      
+              fhPXbJjibebvDIGFmwwq1YRoTnNX8                                                                      
+
+student1      $argon2id$v=19$m=19456,t=2,p=1$U4bIQwmDK5vg$pXI7BLrkNMUOrbDr  student  2000       student1 name    
+              EVMK5hqJrwiVcUjZszeeaucfu8s                                                                        
+
+student2      $argon2id$v=19$m=19456,t=2,p=1$SlPNOrEPh413Kvl/pIIZ$AH8zfgFZ  student  2001       student2 name    
+              bN8nopfvsb1T69cNfOzIqL7uKiBPDXCIXOE                                                                
+
+student3      $argon2id$v=19$m=19456,t=2,p=1$6808d2jos3illA$WfJ/KPGKeNfuRF  student  2002       student3 name    
+              wmcSkCEvYiJBFy7BbRv6Lehq3wt20                                                                      
+
+testadmin1    $argon2id$v=19$m=19456,t=2,p=1$Juu0Ly4SiR1CWCzwkaQlRzEnkA$bC  admin    1000       testadmin1 name  
+              VzrsYawA6bTrUn/jUI3X7KNQzCrlQtqDEtxc9waIA                                                          
+
+teststudent3  $argon2id$v=19$m=19456,t=2,p=1$IWewR/qeVY4$maDeoOFcwDxx8PcSf  student  2002       teststudent3 name
+              3JL7wUvASR+UNOR8JZ02ETFhqY         
+
+I further verified that `await hash(...)` was indeed doing the encryption by removing the hash function call and 
+adding the raw string password as the account creation, getting the output below and confirming the hash function 
+purpose.
+
+... same table as before on top                                               
+
+admin2        admin2                                                        admin    1002       admin2 name    
+
+7.
+authdemo2 stores an individual sessionid in a cookie, to indicate that a user logged in instead of a username. 
+This solution has many advantages comprised mainly in security, scalability, and maintainability. Since session IDs 
+can be random tokens, they minimize the value of stolen cookies, compared to username cookies that can expose personal 
+or identifying information. Furthermore, by having the session IDs stored in server-side data, sessions can be terminated 
+or invalidated by the server side, regardless of client-side cookies. This security feature comes along with advantages 
+in scalability thanks to centralized session data storage management and the client maintaining complete statelessness, 
+as the server handles most of the logic.
+
+However, those same advantages come with same disadvantages, at scale, the management of high volume sessions can become 
+expensive quickly. Also, the concept of managing states of clients on the server side goes against the stateless design 
+principles. This uses unecessary resources on the server-side and overall increases latency from the session ID validation 
+and increased fetch() requests.
+
+8.
+The sessions are valid for 259,200,000 milliseconds = 259,200 seconds = 4320 minutes = 72 hours. The session validity 
+length can be changed at the top of authdb.js, shown in line the below.
+
+    const sessionLength = 3600 * 72 * 1000 // length of sessions in milliseconds
+
+I verified this by changing the sessionLength to 10 seconds = 10000 milliseconds, then logged into an admin account.
+As expected, the list displayed the information in the first 10 seconds, and did not afterwards as the listSubmission() 
+function in authdemo2.js has a session bound at the beginning. The analysis page still does work as it does not have 
+a session bound. Similarly, I logged into a student account, where the first 10 seconds I was able to upload submissions 
+, whilst afterwards I could not.
+
+9.
+To change authdemo2 to store the uploading filename and file contents, I began with creating a new table in the database. 
+To do that, in authdb.js, I added the query below under the rest of the table schema creation queries, with its own table 
+name constant at the top as well, shown below. The query syntax was taken inspiration from the other table creation queries.
+
+    const dbFile = "submissions.db";
+    const submissionTable = submissionShortName;
+    const authTable = "accounts";
+    const sessionTable = "sessions";
+    const fileTable = "files"       // added
+    const sessionLength = 3600 * 72 * 1000 // length of sessions in milliseconds
+
+    // ... other constants ...
+
+    // ... other table creations ...
+
+    db.execute(`
+        CREATE TABLE IF NOT EXISTS ${fileTable} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fileName TEXT,
+            fileContents TEXT
+        )`
+    );
+
+Later on, I understood that I wanted to assure that only valid files would be uploaded. Therefore, in authdemo2.js, 
+I added a placeholder function called addFile(f) that I would later implement in authdb.js, after the checkSubmission 
+function. I knew I could use the submission object knowing it contained the filename and file contents after 
+examining and understanding the JSON string format that the data is transported in from question 2 of this assignment. 
+The modified code in addSubmission() in authdemo2.js is shown below.
+
+    if (account && account.access === "student") {
+        const q = checkSubmission(submission.filename, submission.filecontents);
+
+        if (!q) {
+            return {
+                contentType: "text/plain",
+                status: status_BAD_REQUEST,
+                contents: "Bad Request: Invalid parsed submission upload",
+            };
+        }
+        
+        let result = db.addSubmission(q);
+        let fileUploadResult = db.addFile(submission);      // added line
+
+        if (result && fileUploadResult) {           // modified line
+            response = {
+                contentType: "text/plain",
+                status: status_OK,
+                contents: "Got the data",
+            };
+        } 
+
+        // ... rest of function ...
+    }
+
+Lastly, to implement that addFile() function in authdb.js, I took the query syntax from the addSubmission(r) function in 
+authdb.js to then upload the filename and file contents as text into the database, shown below.
+
+    export function addFile(f) {    
+        return db.query(`INSERT OR REPLACE INTO ${fileTable} (fileName, fileContents)
+                    VALUES ('${f.filename}',' ${f.filecontents}')`);
+    }
+
+To test this implementation, I logged into the program as a student and uploaded two files, a valid and invalid file.
+Afterwards, I would go into the assignment 4 directory, and access the files table in submissions.db through sqlite.
+There I verfied the existence of the valid file and the absence of the invalid file, output shown below.
+
+    id  fileName                       fileContents                 
+    --  -----------------------------  -----------------------------
+    1   comp2406-assign4-student1.txt   COMP 2406 2024F Assignment 4
+                                        Name: Student1               
+                                        Student ID: 2000             
+                                                                        
+                                        1. an answer                 
+                                                                        
+                                        2. an answer                 
+                                                                        
+                                        3. an answer                 
+                                                                        
+                                        4. an answer                 
+                                                                        
+                                        5. an answer                 
+                                                                        
+                                        6. an answer                 
+                                                                        
+                                        7. an answer            

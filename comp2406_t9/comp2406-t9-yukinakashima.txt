@@ -1,0 +1,51 @@
+COMP 2406 2024F Tutorial 9
+Name: Yuki Nakashima
+Student ID: 101189690
+
+1. edited deno.json in "tasks" from "start" to "go"
+
+2. routes below are defined
+    routes: {
+    "./routes/_404.tsx": $_404,
+    "./routes/_app.tsx": $_app,
+    "./routes/api/joke.ts": $api_joke,
+    "./routes/greet/[name].tsx": $greet_name_,
+    "./routes/index.tsx": $index,
+  }
+
+3. edited that ./freshdemo/routes/index.tsx
+
+4. It appeared at the top of index.tsx page, I simply added a 
+    <head></head> element to the body and saved, then 
+    reload the page to see the effect
+
+5. They are not available in any URLs, routes are not specified
+
+6. http://locahost:8000/api/joke
+
+7. http://localhost:8000/greet/Yuki
+
+8. The BUTTON heading is outputted in the index page beside the counter.
+   Causing a change in server output. The placement of the modification 
+   does matter since it caused an error when outside the div
+
+9. 
+
+const buttonIncrement = 3;
+
+interface CounterProps {
+  count: Signal<number>;
+}
+
+export default function Counter(props: CounterProps) {
+  return (
+    <div class="flex gap-8 py-6">
+      <Button onClick={() => props.count.value -= buttonIncrement}>-{buttonIncrement}</Button>
+      <p class="text-3xl tabular-nums">{props.count}</p>
+      <Button onClick={() => props.count.value += buttonIncrement}>+{buttonIncrement}</Button>
+      <h1>BUTTON</h1>
+    </div>
+  );
+}
+
+10. 

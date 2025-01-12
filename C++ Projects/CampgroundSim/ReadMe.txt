@@ -2,6 +2,11 @@ Name & Student ID:
     Yuki Nakashima
     101189690
 
+Purpose Of Program:
+    Simulates a campground management software. Abilities include adding and removing campsites and adding and removing 
+    campers. Campers are defined as singular or groups of people under a name, with a corresponding vehicle for the group.
+    Categories of campsites include rv site, cabin, lodge, tent, trailer, and miscellanous.
+
 Files Included:
     Camper.h
     Camper.cc
@@ -28,6 +33,12 @@ Libraries Used:
 Compilation Instructions:
     To get final executable a1, enter in terminal
         make
+
+    To run executable a1, enter in terminal
+        ./a1
+
+    To run executable a1test, enter in terminal
+        ./a1test
     
     To delete all object files of classes, enter in terminal
         make clean

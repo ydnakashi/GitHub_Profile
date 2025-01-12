@@ -64,6 +64,7 @@ void Campground::removeCamper(const int& site_number, const string& name) {
 
 void Campground::printCampsites() {
     for (int i = 0; i < num_campsites; ++i) {
+        cout <<endl;
         campsites[i].print();
     }
 }

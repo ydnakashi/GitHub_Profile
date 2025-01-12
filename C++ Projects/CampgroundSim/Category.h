@@ -4,12 +4,14 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
 
 namespace cat{
     
     enum Category {rv_site, cabin, lodge, tent, trailer, misc};
 
-    std::string categoryToString(Category c);
+    string categoryToString(Category c);
+    Category stringToCategory(const string& s);
 
 }
 #endif

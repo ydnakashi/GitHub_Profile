@@ -2,6 +2,9 @@ Name & Student ID:
     Yuki Nakashima
     101189690
 
+Purpose of Program:
+    
+
 Files Included:
     Controller.cc
         Controls interaction of RideShare with the View

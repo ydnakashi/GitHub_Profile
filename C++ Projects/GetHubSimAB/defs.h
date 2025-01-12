@@ -3,6 +3,7 @@
 
 #define MAX_FILES 100
 #define MAX_REPOS 100
+#define MAX_ARRAY 100
 
 
 

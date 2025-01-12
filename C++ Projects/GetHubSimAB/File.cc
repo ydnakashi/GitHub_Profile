@@ -11,7 +11,7 @@ bool File::lessThan(Date& date) {
 }
 
 void File::print() {
-    cout <<this->name;
+    cout <<this->name <<" ";
     date.print();
 }
 

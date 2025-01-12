@@ -36,13 +36,13 @@ int Repo::getNumFiles() {
 }
 
 void Repo::print() {
-    cout<<"\nRepo Title: " <<title <<"\nRepo Owner: " <<owner <<" Number of Files: " <<getNumFiles() <<endl;
+    cout<<"\nRepo Title: " <<title <<"\nRepo Owner: " <<owner <<"\nNumber of Files: " <<getNumFiles() <<endl;
 }
 
 void Repo::printFiles() {
     print();
     for (int i = 0; i < fileList->size(); ++i) {
-        cout<<i <<") File: " <<fileList->get(i)->getName() <<"\nDate Added: ";
+        cout<<i+1 <<") File: " <<fileList->get(i)->getName() <<"\nDate Added: ";
         fileList->get(i)->getDate().print();
         cout <<endl;
     }

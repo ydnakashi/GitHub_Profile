@@ -50,18 +50,18 @@ void Control::downloadRepo(){
     Client client;
     int repo;
     getHub.printRepos();  
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    client.cloneRepo(getHub, repo);
+    client.cloneRepo(getHub, repo-1);
 }
 
 void Control::printClientRepo(){
     Client client;
     int repo;
     getHub.printRepos();  
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    client.cloneRepo(getHub, repo);
+    client.cloneRepo(getHub, repo-1);
     client.printRepo();
 }
 
@@ -69,13 +69,13 @@ void Control::printClientFileContent(){
     Client client;
     int repo, file;
     getHub.printRepos();  
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    client.cloneRepo(getHub, repo);
+    client.cloneRepo(getHub, repo-1);
 
-    cout << "Enter file number: ";
+    cout << "File number | ";
     view.getNumber(file);
-    client.printFileContents(file);
+    client.printFileContents(file-1);
 }
 
 void Control::initGetHub(){
@@ -98,41 +98,39 @@ void Control::printRepos(){
 void Control::printRepo(){
     int repo;
     getHub.printRepos();
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    getHub.printRepo(repo);
+    getHub.printRepo(repo-1);
 }
 
 void Control::printFileContents(){
     int repo, file;
     getHub.printRepos();
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    getHub.printRepo(repo);
-    cout<<"Enter file number: ";
+    getHub.printRepo(repo-1);
+    cout<<"File number | ";
     view.getNumber(file);
-    getHub.printFileContents(repo,file);
+    getHub.printFileContents(repo-1,file-1);
 }
 
 void Control::removeRepo(){
     int repo;
     getHub.printRepos();
-    cout<<"Enter repo number to delete: ";
+    cout<<"Repo number to delete | ";
     view.getNumber(repo);
-    getHub.deleteRepo(repo);
-    cout<<"Repo deleted."<<endl;
+    getHub.deleteRepo(repo-1);
 }
 
 void Control::removeFile(){
     int repo, file;
     getHub.printRepos();
-    cout<<"Enter repo number: ";
+    cout<<"Repo number | ";
     view.getNumber(repo);
-    getHub.printRepo(repo);
-    cout<<"Enter file number to delete: ";
+    getHub.printRepo(repo-1);
+    cout<<"File number to delete | ";
     view.getNumber(file);
-    getHub.deleteFile(repo,file);
-    cout<<"File deleted."<<endl;
+    getHub.deleteFile(repo-1,file-1);
 }
 
 const string Control::repoTitles[5] = {

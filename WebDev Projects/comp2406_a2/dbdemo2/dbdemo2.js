@@ -1,16 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024 Anil Somayaji
-//
-// dbdemo2.js
-// for COMP 2406 (Fall 2024), Carleton University
-// 
-// Initial version: October 7, 2024
 //
 // run with the following command:
 //    deno run --allow-net --allow-read --allow-write dbdemo2.js
 //
 
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { contentType } from "jsr:@std/media-types";
 
 const status_NOT_FOUND = 404;
 const status_OK = 200;
@@ -69,33 +63,6 @@ function analyzeRecordsDB(db, table) {
     
     return analysis;
 }
-
-
-function MIMEtype(filename) {
-
-    const MIME_TYPES = {
-        'css': 'text/css',
-        'gif': 'image/gif',
-        'htm': 'text/html',
-        'html': 'text/html',
-        'ico': 'image/x-icon',
-        'jpeg': 'image/jpeg',
-        'jpg': 'image/jpeg',
-        'js': 'text/javascript',
-        'json': 'application/json',
-        'pdf': 'application/pdf',
-        'png': 'image/png',
-        'txt': 'text/text'
-    };
-
-    var extension = "";
-    
-    if (filename) {
-        extension = filename.slice(filename.lastIndexOf('.')+1).toLowerCase();
-    }
-
-    return MIME_TYPES[extension] || "application/octet-stream";
-};
 
 
 function template_header(title) {
@@ -209,17 +176,6 @@ async function routeGet(req) {
     }
 }
 
-// function validDate(date) {
-//     var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-//     var components = date.split(" ");
-//     if (months.includes(components[0])) {
-//         var dateObjIn = "" + (months.indexOf(components[0])+1) + "/" + components[1].replace(/,/, '/') + components[2];
-//         console.log(dateObjIn);
-//         return !isNaN(new Date(dateObjIn));
-//     }
-//     return false;
-// }
-
 async function addRecord(req) {
     var body = await req.formData();
     var obj = { name: body.get("name"),
@@ -241,7 +197,6 @@ async function addRecord(req) {
 
 async function showAnalysis() {
     var analysis = analyzeRecordsDB(db, table);
-    // analysis.cityList.sort();
     var cityList = '<li>' + analysis.cityList.join('</li> <li>') + '</li>';
     var countryList = '<li>' + analysis.countryList.join('</li> <li>') + '</li>';
     
@@ -309,19 +264,19 @@ async function route(req) {
 
 
 async function fileData(path) {
-    var contents, status, contentType;
+    var contents, status, content_type;
     
     try {
         contents = await Deno.readFile("./static" + path);
         status = status_OK;
-        contentType = MIMEtype(path);
+        content_type = contentType(path);
     } catch (e) {
         contents = template_notFound(path);
         status = status_NOT_FOUND;
-        contentType = "text/html";
+        content_type = "text/html";
     }
     
-    return { contents, status, contentType };
+    return { contents, status, content_type };
 }
 
 

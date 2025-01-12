@@ -1,20 +1,14 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024 Anil Somayaji
-//
-// simpleserver2.js
-// for COMP 2406 (Fall 2024), Carleton University
-// 
-// Initial version: Sept 26, 2024
-//
 // run with the following command:
 //    deno run --allow-net --allow-read simpleserver2.js
 //
+
+import { contentType } from "jsr:@std/media-types";
 
 const status_NOT_FOUND = 404;
 const status_OK = 200;
 const status_METHOD_NOT_IMPLEMENTED = 501;
 
-async function MIMEtype(filename) {
+function MIMEtype(filename) {
 
     const MIME_TYPES = {
         'css': 'text/css',
@@ -72,8 +66,7 @@ function template_methodNotImplemented(path) {
 }
 
 async function routeOther(req) {
-    // const path = new URL(req.url).pathname;
-    const path = req.url.slice(req.url.lastIndexOf('/'));
+    const path = new URL(req.url).pathname;
     
     var contents, status, contentType; 
     contents = template_methodNotImplemented(path);
@@ -84,8 +77,7 @@ async function routeOther(req) {
 }
 
 async function route(req) {
-    // var path = new URL(req.url).pathname;
-    var path = req.url.slice(req.url.lastIndexOf('/'));
+    var path = new URL(req.url).pathname;
     if (req.method === "GET") {   
         if (path === "/") {
             path = "/index.html";
@@ -97,26 +89,26 @@ async function route(req) {
 }
 
 async function fileData(path) {
-    var contents, status, contentType;
+    var contents, status, content_type;
     
     try {
         contents = await Deno.readFile("./www" + path);
         status = status_OK;
-        contentType = await MIMEtype(path);
+        // contentType = MIMEtype(path);
+        content_type = await contentType(path);
     } catch (e) {
         // contents = template_notFound(path);
         contents = await Deno.readFile("./www/pageNotFound.html");
         status = status_NOT_FOUND;
-        contentType = "text/html";
+        content_type = "text/html";
     }
     
-    return { contents, status, contentType };
+    return { contents, status, content_type };
 }
 
 async function handler(req) {
 
-    // var origpath = new URL(req.url).pathname;
-    var origpath = req.url.slice(req.url.lastIndexOf('/'));
+    var origpath = new URL(req.url).pathname;
     var r = await route(req);
 
     console.log(`${r.status} ${req.method} ${r.contentType} ${origpath}`); 

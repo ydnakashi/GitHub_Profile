@@ -74,7 +74,7 @@ void Repo::print() const {
 void Repo::printFiles() const {
 	print();
 	for (int i = 0; i < fileList->size(); ++i){
-		cout << i << ") ";
+		cout << i+1 << ") ";
 		fileList->get(i)->print();
 		cout << endl;
 	}

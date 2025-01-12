@@ -24,7 +24,7 @@ void GetHub::addRepo(const string& repo, const string& owner) {
 
 void GetHub::deleteRepo(int repo) {
     Repo* outRepo = repoList->remove(repo);
-    if (outRepo == nullptr)
+    if (outRepo != nullptr)
         cout <<"Complete: Repo deletion successful." <<endl;
     else
         cout <<"Error: Repo deletion failed." <<endl;
@@ -77,7 +77,7 @@ void GetHub::deleteFile(int repo, int file) {
 void GetHub::printRepos() {
     cout <<"GetHub\n========" <<endl;
     for (int i = 0; i < repoList->size(); ++i) {
-        cout<<i <<") ";
+        cout<<i+1 <<") ";
         repoList->get(i)->print();
         cout <<endl;
     }

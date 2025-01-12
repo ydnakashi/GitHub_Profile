@@ -1,16 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024 Anil Somayaji
-//
-// submitdemo.js
-// for COMP 2406 (Fall 2024), Carleton University
-// 
-// Initial version: November 6, 2024
-//
+
 // run with the following command:
 //    deno run --allow-net --allow-read --allow-write submitdemo.js
 //
 
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { contentType } from "jsr:@std/media-types";
 
 const status_NOT_FOUND = 404;
 const status_OK = 200;
@@ -20,7 +14,6 @@ const status_BAD_REQUEST = 400;
 const status_CONFLICT = 409;
 const appTitle = "COMP 2406 Submissions Demo";
 const dbFile = "submissions.db";
-// const table = "tutorial7new";
 const table = "assignment3";
 const filePrefix = "comp2406-assign3";
 const submissionName = "COMP 2406 2024F Assignment 3";

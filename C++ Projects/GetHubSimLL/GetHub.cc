@@ -22,6 +22,10 @@ void GetHub::addRepo(const string& repo, const string& host){
 
 void GetHub::deleteRepo(int repo){
 	Repo* ch = repoList->remove(repo);
+	if (ch == nullptr) {
+		cout <<"Repo number out of bounds, repo deletion unsuccessful." <<endl;
+		return;
+	}
 	cout<<"Repo deleted:"<<endl;
 	ch->print();
 	delete ch;
@@ -59,7 +63,7 @@ void GetHub::deleteFile(int repo, int file){
 		return;
 	}
 	if(!ch->removeFile(file)){
-		cout << "Could not find file to remove" << endl;
+		cout << "Could not find file to remove." << endl;
 		return;
 	}
 }
@@ -92,7 +96,7 @@ void GetHub::printRepos() const {
 	cout << "GetHub" << endl;
 	cout << "========" << endl;
 	for (int i = 0; i < repoList->size(); ++i){
-		cout << i << ") ";
+		cout << i+1 << ") ";
 		repoList->get(i)->print();
 	}
 	cout << endl;

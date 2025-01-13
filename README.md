@@ -8,3 +8,6 @@ A quick run-through of the files, although self-explanatory
   - The C++ Project directory contains completed programs made in C++.
   - The WebDev Project directory contains completed programs made in JavaScript, Deno.js, HTML, and CSS.
   - The Experiment Project directory contains completed and uncompleted programs currently being worked on or tests of emerging tools or tools novel to myself.
+
+If you are ever further curious about myself, please visit my linkedin page at:
+www.linkedin.com/in/yuki-d-nakashima

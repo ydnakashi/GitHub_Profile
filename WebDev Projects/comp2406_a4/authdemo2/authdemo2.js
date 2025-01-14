@@ -1,10 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024 Anil Somayaji
-//
-// authdemo2.js, part of authdemo2
-// for COMP 2406 (Fall 2024), Carleton University
-// 
-// Initial version: November 23, 2024
 //
 // run with "deno task start"
 //

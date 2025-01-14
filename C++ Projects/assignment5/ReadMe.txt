@@ -7,7 +7,8 @@ Files Included:
         (a) Contains Podcast meta-data as well as a collection of Episodes.
     2. Episode.cc, Episode.h (Entity): 
         (a) Contains Episode meta-data and content.
-    3. Search.cc, Search.h (Behaviour object): Virtual base class of all Search objects. 
+    3. Search.cc, Search.h (Behaviour object): 
+        Virtual base class of all Search objects. 
         (a) H_Search (Behaviour object): Matches Episodes by the Podcast host.
         (b) C_Search (Behaviour object): Matches Episodes by the Podcast category. 
         (c) HorC_Search (Behaviour object): Matches Episodes by the Podcast host or category.
@@ -15,7 +16,8 @@ Files Included:
         (a) A simple (templated) data structure.
     5. Podify.cc, Podify.h (Control object): 
         (a) Stores Podcasts along with their Episodes, allows them to be queried.
-    6. PodcastPlayer.cc, PodcastPlayer.h (Behaviour object): Determines how to play an Episode (either "audio" only, or "audio and video", both of which are simply text).
+    6. PodcastPlayer.cc, PodcastPlayer.h (Behaviour object):
+        Determines how to play an Episode (either "audio" only, or "audio and video", both of which are simply text).
         (a) AudioPlayer: Displays the audio of an Episode.
         (b) VideoPlayer: Displays the audio of an Episode and some ASCII art which is loaded from a file at runtime.
     7. View.cc, View.h (View object):

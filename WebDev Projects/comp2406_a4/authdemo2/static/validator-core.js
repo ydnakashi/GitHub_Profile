@@ -1,12 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024 Anil Somayaji
-//
-// static/validator-core.js, part of authdemo2
-// for COMP 2406 (Fall 2024), Carleton University
-// 
-// Initial version: November 22, 2024
-//
-
 export const submissionShortName = "assign4";
 const filePrefix = "comp2406-" + submissionShortName;
 const submissionName = "COMP 2406 2024F Assignment 4"

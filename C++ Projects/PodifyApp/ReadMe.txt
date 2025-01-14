@@ -2,6 +2,10 @@ Name & Student ID:
     Yuki Nakashima
     101189690
 
+Purpose of Program:
+    Simulates Podcast playlist application called Podify containing a list of podcasts. Podcasts contain episodes, simulated with audio 
+    files and video files in a string form. Utilizes the Factory design pattern to facilitate episode and podcast generation.
+
 Files Included:
     1. Podcast.cc, Podcast.h (Entity / Container object):
         (a) Contains Podcast meta-data as well as a collection of Episodes.
@@ -28,6 +32,8 @@ Files Included:
         (a) Test framework for Podify.
     10. Tester.cc, Tester.h: 
         (a) Provides some common test functionality.
+    11. classa2.py
+        (a) Generates templated C++ source files to facilitate programming
 
 Libraries Used:
     iostream
